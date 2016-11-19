@@ -3,6 +3,7 @@ package drigor
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
+import java.util.*
 
 @Service
 open class EventsHandler(
@@ -12,33 +13,42 @@ open class EventsHandler(
 
     val logger = LoggerFactory.getLogger(javaClass)
 
-    val explanationPattern = Regex("""^#(\w+) (.+)""")
+    val explanationPattern = Regex("""^#(place|crap) (.+)""")
+
+    val unknownTerms = HashMap<User, String>()
 
     @EventListener
     fun handleMessage(message: Message) {
-        logger.info(message.toString())
+        try {
+            logger.info(message.toString())
 
-        explanationPattern.find(message.text)?.let {
-            val (category, explanation) = it.destructured
-            logger.info("new term! $explanation means $category")
-        } ?: let {
+            explanationPattern.find(message.text)?.let {
+                val (category, explanation) = it.destructured
+                val s = unknownTerms[message.from]
+                logger.info("new term! $explanation is $s — $category")
+                brain.explainMessage(s!!, explanation, MessageCategories.valueOf(category.toUpperCase()))
+            } ?: let {
 
 
-            val messageClass = brain.askForCategory(message.text)
-            logger.info("message recognized as $messageClass")
+                val messageClass = brain.askForCategory(message.text)
+                logger.info("message recognized as $messageClass")
 
-            when (messageClass) {
-                MessageCategories.PASSENGER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = false))
-                MessageCategories.DRIVER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = true))
-                MessageCategories.TIME -> gears.sendCard(GearsClient.Card(name = message.from.name!!, time = "12:34"))
-                MessageCategories.PLACE -> gears.sendCard(GearsClient.Card(name = message.from.name!!, place = "Столовка"))
-                MessageCategories.UNKNOWN -> {
-                    api.sendMessage("Эмм... не понял", message.conversation)
-                }
-                MessageCategories.CRAP -> {
-                    logger.info("skipping crap")
+                when (messageClass) {
+                    MessageCategories.PASSENGER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = false))
+                    MessageCategories.DRIVER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = true))
+                    MessageCategories.TIME -> gears.sendCard(GearsClient.Card(name = message.from.name!!, time = "12:34"))
+                    MessageCategories.PLACE -> gears.sendCard(GearsClient.Card(name = message.from.name!!, place = "Столовка"))
+                    MessageCategories.UNKNOWN -> {
+                        unknownTerms[message.from] = message.text
+                        api.sendMessage("Эмм... не понял", message.conversation)
+                    }
+                    MessageCategories.CRAP -> {
+                        logger.info("skipping crap")
+                    }
                 }
             }
+        } catch (e: Exception) {
+            println(e)
         }
     }
 
