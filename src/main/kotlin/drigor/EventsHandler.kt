@@ -28,16 +28,16 @@ open class EventsHandler(
                 logger.info("new term! $explanation is $s — $category")
                 brain.explainMessage(s!!, explanation, MessageCategories.valueOf(category.toUpperCase()))
             } ?: let {
-
-
-                val messageClass = brain.askForCategory(message.text)
+                val (messageClass, meta) = brain.askForCategory(message.text)
                 logger.info("message recognized as $messageClass")
 
                 when (messageClass) {
                     MessageCategories.PASSENGER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = false))
                     MessageCategories.DRIVER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = true))
-                    MessageCategories.TIME -> gears.sendCard(GearsClient.Card(name = message.from.name!!, time = "12:34"))
-                    MessageCategories.PLACE -> gears.sendCard(GearsClient.Card(name = message.from.name!!, place = "Столовка"))
+                    MessageCategories.TIME -> gears.sendCard(GearsClient.Card(name = message.from.name!!, time = message.text))
+                    MessageCategories.PLACE -> {
+                        gears.sendCard(GearsClient.Card(name = message.from.name!!, place = meta))
+                    }
                     MessageCategories.UNKNOWN -> {
                         unknownTerms[message.from] = message.text
                         api.sendMessage("Эмм... не понял", message.conversation)

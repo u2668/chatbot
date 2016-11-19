@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class Endpoint(val publisher: ApplicationEventPublisher) {
+class SkypeEndpoint(val publisher: ApplicationEventPublisher) {
 
     val SELF_ID = "28:dead2c46-acc1-4a10-84f8-87a96a9497d4"
     val logger = LoggerFactory.getLogger(javaClass)
 
-    @PostMapping("/")
+    @PostMapping("/skype")
     fun handleSkypeEventMessage(@RequestBody event: SkypeMessage): HttpEntity<Void> {
         logger.info(event.toString())
         when (event.type) {
