@@ -14,6 +14,7 @@ open class EventsHandler(
     val logger = LoggerFactory.getLogger(javaClass)
 
     val explanationPattern = Regex("""^#(place|crap) (.+)""")
+    val tagPattern = Regex("""<(\w+).*>.+</\1>""")
 
     val unknownTerms = HashMap<User, String>()
 
@@ -28,18 +29,19 @@ open class EventsHandler(
                 logger.info("new term! $explanation is $s — $category")
                 brain.explainMessage(s!!, explanation, MessageCategories.valueOf(category.toUpperCase()))
             } ?: let {
-                val (messageClass, meta) = brain.askForCategory(message.text)
+                val text = tagPattern.replace(message.text, " ")
+                val (messageClass, meta) = brain.askForCategory(text)
                 logger.info("message recognized as $messageClass")
 
                 when (messageClass) {
                     MessageCategories.PASSENGER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = false))
                     MessageCategories.DRIVER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = true))
-                    MessageCategories.TIME -> gears.sendCard(GearsClient.Card(name = message.from.name!!, time = message.text))
+                    MessageCategories.TIME -> gears.sendCard(GearsClient.Card(name = message.from.name!!, time = text))
                     MessageCategories.PLACE -> {
                         gears.sendCard(GearsClient.Card(name = message.from.name!!, place = meta))
                     }
                     MessageCategories.UNKNOWN -> {
-                        unknownTerms[message.from] = message.text
+                        unknownTerms[message.from] = text
                         api.sendMessage("Эмм... не понял", message.conversation)
                     }
                     MessageCategories.CRAP -> {
@@ -48,7 +50,7 @@ open class EventsHandler(
                 }
             }
         } catch (e: Exception) {
-            println(e)
+            logger.error(e.message, e)
         }
     }
 
@@ -56,6 +58,6 @@ open class EventsHandler(
     fun handleNewConversation(addedToConversation: AddedToConversation) {
         logger.info("bot was added to conversation")
         api.sendMessage("Всем привет!", addedToConversation.conversation)
-        println(addedToConversation.conversation)
+        logger.info(addedToConversation.conversation.toString())
     }
 }

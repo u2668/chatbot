@@ -1,5 +1,6 @@
 package drigor
 
+import org.slf4j.LoggerFactory
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpEntity
 import org.springframework.stereotype.Service
@@ -8,6 +9,7 @@ import org.springframework.util.CollectionUtils
 @Service
 class SkypeApi {
     val restTemplate = RestTemplateBuilder().build()
+    val logger = LoggerFactory.getLogger(javaClass)
 
     fun requestToken() =
             restTemplate
@@ -36,7 +38,7 @@ class SkypeApi {
                     ),
                     Void::class.java)
         } catch (e: Exception) {
-            println(e)
+            logger.error(e.message, e)
         }
     }
 }

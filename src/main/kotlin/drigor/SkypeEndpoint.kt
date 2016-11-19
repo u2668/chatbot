@@ -27,7 +27,7 @@ class SkypeEndpoint(val publisher: ApplicationEventPublisher) {
                     publisher.publishEvent(AddedToConversation(event.conversation))
                 }
             }
-            else -> println(event.type)
+            else -> logger.info(event.type)
         }
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
