@@ -1,5 +1,6 @@
 package drigor
 
+import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpStatus
@@ -12,15 +13,17 @@ import org.springframework.web.bind.annotation.RestController
 class Endpoint(val publisher: ApplicationEventPublisher) {
 
     val SELF_ID = "28:dead2c46-acc1-4a10-84f8-87a96a9497d4"
+    val logger = LoggerFactory.getLogger(javaClass)
 
     @PostMapping("/")
     fun handleSkypeEventMessage(@RequestBody event: SkypeMessage): HttpEntity<Void> {
+        logger.info(event.toString())
         when (event.type) {
             "message" -> {
                 publisher.publishEvent(Message(event.text!!, event.from, event.conversation))
             }
             "conversationUpdate" -> {
-                if (event.membersAdded!!.any { it.id == SELF_ID }) {
+                if (event.membersAdded?.any { it.id == SELF_ID } ?: false) {
                     publisher.publishEvent(AddedToConversation(event.conversation))
                 }
             }
