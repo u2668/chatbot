@@ -20,11 +20,11 @@ class SkypeApi {
                                     "scope" to listOf("https://graph.microsoft.com/.default"))),
                             Map::class.java)["access_token"]
 
-    fun sendMessage(text: String, to: String) {
+    fun sendMessage(text: String, to: User) {
         val token = requestToken()
         try {
             restTemplate.postForObject(
-                    "https://apis.skype.com/v3/conversations/${to}/activities/",
+                    "https://apis.skype.com/v3/conversations/${to.id}/activities/",
                     HttpEntity(
                             mapOf(
                                     "text" to text,

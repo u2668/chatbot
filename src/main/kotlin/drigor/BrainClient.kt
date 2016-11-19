@@ -8,7 +8,7 @@ import org.springframework.web.client.RestTemplate
 class BrainClient {
     val restTemplate = RestTemplate()
 
-    fun askForClass(text: String) = restTemplate
+    fun askForCategory(text: String) = restTemplate
             .getForObject(
                     "http://46.101.204.43:8081/chat-message-classes/UNKNOWN/{text}",
                     BrainResponse::class.java, text
