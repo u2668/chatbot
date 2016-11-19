@@ -23,7 +23,7 @@ class BrainClient {
     fun explainMessage(text: String, explanation: String, category: MessageCategories) {
         val r = restTemplate
                 .postForObject(
-                        "http://46.101.204.43:8081/chat-message-classes/{category}/{text}?meta={meta}",
+                        "$brainIp/chat-message-classes/{category}/{text}?meta={meta}",
                         emptyMap<String, String>(),
                         Map::class.java, category, text, explanation
                 )

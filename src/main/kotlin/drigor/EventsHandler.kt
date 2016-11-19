@@ -16,7 +16,7 @@ open class EventsHandler(
 
     val logger = LoggerFactory.getLogger(javaClass)
 
-    val explanationPattern = Regex("""^#(place|crap) (.+)""")
+    val explanationPattern = Regex("""^#(place|crap|driver|passenger|place|time)\s*(.+)?""")
     val tagPattern = Regex("""<(\w+).*>.+</\1>""")
 
     var conversation by Delegates.notNull<User>()
@@ -35,6 +35,7 @@ open class EventsHandler(
                 val s = unknownTerms[message.from]
                 logger.info("new term! $explanation is $s — $category")
                 brain.explainMessage(s!!, explanation, MessageCategories.valueOf(category.toUpperCase()))
+                skype.sendMessage("Ага понял, $s — это место \"$explanation\"", message.conversation)
             } ?: let {
                 val text = tagPattern.replace(message.text, " ")
                 val (messageClass, meta) = brain.askForCategory(text)
@@ -57,7 +58,7 @@ open class EventsHandler(
                     }
                     MessageCategories.UNKNOWN -> {
                         unknownTerms[message.from] = text
-                        skype.sendMessage("Эмм... не понял", message.conversation)
+                        skype.sendMessage("${message.from.name}, не понял тебя", message.conversation)
                     }
                     MessageCategories.CRAP -> {
                         logger.info("skipping crap")
@@ -71,8 +72,13 @@ open class EventsHandler(
 
     @EventListener
     fun handleNotification(notification: Notification) {
-        println("notification")
-        skype.sendCard("123", conversation)
+        when (notification.map["type"]) {
+            "full" -> skype.sendMessage("${notification.map["payload"]}, твоя машина полная", conversation)
+            "needTime" -> skype.sendMessage("Когда?", conversation)
+            "needPlace" -> skype.sendMessage("Куда?", conversation)
+            "newCar" -> skype.sendMessage("Новая машина", conversation)
+        }
+//        skype.sendCard("123", conversation)
     }
 
     @EventListener
