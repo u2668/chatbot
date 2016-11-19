@@ -9,14 +9,15 @@ import org.springframework.web.client.RestTemplate
 class BrainClient {
     val restTemplate = RestTemplate()
     val logger = LoggerFactory.getLogger(javaClass)
+    val brainIp = "http://82.196.4.171:8081"
 
     fun askForCategory(text: String): Pair<MessageCategories, String?> {
         val brainResponse = restTemplate
                 .getForObject(
-                        "http://46.101.204.43:8081/chat-message-classes/${MessageCategories.UNKNOWN}/{text}",
+                        "$brainIp/chat-message-classes/${MessageCategories.UNKNOWN}/{text}",
                         BrainResponse::class.java, text
                 )
-        return Pair(brainResponse.category.first(), brainResponse.meta?.first())
+        return Pair(brainResponse.category.first(), brainResponse.meta?.firstOrNull())
     }
 
     fun explainMessage(text: String, explanation: String, category: MessageCategories) {

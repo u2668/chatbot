@@ -8,3 +8,4 @@ enum class MessageCategories {
 
 data class Message(val text: String, val from: User, val conversation: User)
 data class AddedToConversation(val conversation: User)
+data class Notification(val map: Map<String, Any>)
