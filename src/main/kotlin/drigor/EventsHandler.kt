@@ -35,7 +35,7 @@ open class EventsHandler(
                 val s = unknownTerms[message.from]
                 logger.info("new term! $explanation is $s — $category")
                 brain.explainMessage(s!!, explanation, MessageCategories.valueOf(category.toUpperCase()))
-                skype.sendMessage("Ага понял, $s — это место \"$explanation\"", message.conversation)
+                skype.sendMessage("Ага понял, $s — это $category", message.conversation)
             } ?: let {
                 val text = tagPattern.replace(message.text, " ")
                 val (messageClass, meta) = brain.askForCategory(text)
@@ -76,7 +76,14 @@ open class EventsHandler(
             "full" -> skype.sendMessage("${notification.map["payload"]}, твоя машина полная", conversation)
             "needTime" -> skype.sendMessage("Когда?", conversation)
             "needPlace" -> skype.sendMessage("Куда?", conversation)
-            "newCar" -> skype.sendMessage("Новая машина", conversation)
+            "newCar" -> {
+                val p = (notification.map["passangers"] as List<String>).toSet().joinToString(", ", "пассажиры: ", "\n")
+                skype.sendMessage("Машина, $p", conversation)
+            }
+            "final" -> {
+                skype.sendMessage("${notification.map["payload"] }", conversation)
+            }
+
         }
 //        skype.sendCard("123", conversation)
     }
