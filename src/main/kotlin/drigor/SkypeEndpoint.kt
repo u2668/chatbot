@@ -1,6 +1,7 @@
 package drigor
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpStatus
@@ -10,9 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class SkypeEndpoint(val publisher: ApplicationEventPublisher) {
+class SkypeEndpoint(
+        val publisher: ApplicationEventPublisher,
+        @Value("28:\${id}") val selfId: String) {
 
-    val SELF_ID = "28:dead2c46-acc1-4a10-84f8-87a96a9497d4"
     val logger = LoggerFactory.getLogger(javaClass)
 
     @PostMapping("/skype")
@@ -23,7 +25,7 @@ class SkypeEndpoint(val publisher: ApplicationEventPublisher) {
                 publisher.publishEvent(Message(event.text!!, event.from, event.conversation))
             }
             "conversationUpdate" -> {
-                if (event.membersAdded?.any { it.id == SELF_ID } ?: false) {
+                if (event.membersAdded?.any { it.id == selfId } ?: false) {
                     publisher.publishEvent(AddedToConversation(event.conversation))
                 }
             }
@@ -39,5 +41,4 @@ class SkypeEndpoint(val publisher: ApplicationEventPublisher) {
             val text: String?,
             val membersAdded: List<User>?
     )
-
 }
