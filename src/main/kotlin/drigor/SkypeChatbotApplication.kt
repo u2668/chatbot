@@ -10,7 +10,7 @@ import java.util.concurrent.Executors
 open class SkypeChatbotApplication {
     @Bean
     open fun applicationEventMulticaster() = SimpleApplicationEventMulticaster().apply {
-        this.setTaskExecutor(Executors.newSingleThreadScheduledExecutor())
+        this.setTaskExecutor(Executors.newCachedThreadPool())
     }
 
 }
