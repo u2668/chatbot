@@ -6,6 +6,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpEntity
 import org.springframework.stereotype.Service
 import org.springframework.util.CollectionUtils
+import org.springframework.web.client.RestClientResponseException
 
 @Service
 class SkypeApi(
@@ -40,6 +41,8 @@ class SkypeApi(
                             ))
                     ),
                     Void::class.java)
+        } catch (e: RestClientResponseException) {
+            logger.error(e.responseBodyAsString, e)
         } catch (e: Exception) {
             logger.error(e.message, e)
         }

@@ -3,34 +3,72 @@ package drigor
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
-import java.time.LocalTime
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoField
+import java.time.temporal.ChronoUnit
+import java.util.*
 
 @Service
 open class EventsHandler(
         val skype: SkypeApi,
-        val gears: GearsClient) {
+        val gears: GearsClient,
+        val brain: BrainClient) {
 
     val logger = LoggerFactory.getLogger(javaClass)
-    val driverPattern = Regex("""^(<at .+>.+</at> )?Везу в (\d{1,2}):(\d{2}) в (.+)$""")
-    val passengerPattern = Regex("""^(<at .+>.+</at> )?\+$""")
+
+    val explanationPattern = Regex("""^#(place|crap|driver|passenger|place|time)\s*(.+)?""")
+
+    val atPattern = Regex("""^(<at .+>.+</at> )?""")
+
     var conversation: User? = null
+
+    val unknownTerms = HashMap<User, String>()
 
     @EventListener
     fun handleMessage(message: Message) {
-        conversation = message.conversation
+        val text = message.text.replace(atPattern, "")
         try {
             logger.info(message.toString())
-            when {
-                message.text.matches(passengerPattern) -> {
-                    gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = false))
-                }
-                message.text.matches(driverPattern) -> {
-                    val (skip, hours, minutes, place) = driverPattern.find(message.text)!!.destructured
-                    val time = LocalTime.of(hours.toInt(), minutes.toInt())
-                    gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = true, time = time.toString(), place = place))
-                }
-                else -> {
-                    skype.sendMessage("Мне жаль... я вас не понял", message.conversation)
+
+            conversation = message.conversation
+
+            explanationPattern.find(text)?.let {
+                val (category, explanation) = it.destructured
+                val s = unknownTerms[message.from]
+                logger.info("new term! $explanation is $s — $category")
+                brain.explainMessage(s!!, explanation, MessageCategories.valueOf(category.toUpperCase()))
+                skype.sendMessage("Ага понял, $s — это $category", message.conversation)
+            } ?: let {
+                val (messageClass, meta) = brain.askForCategory(text)
+                logger.info("message recognized as $messageClass $meta")
+
+                when (messageClass) {
+                    MessageCategories.PASSENGER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = false))
+                    MessageCategories.DRIVER -> gears.sendCard(GearsClient.Card(name = message.from.name!!, driver = true))
+                    MessageCategories.TIME -> {
+                        val time = meta?.let {
+                            val localTime = Instant
+                                    .ofEpochSecond(meta.toLong())
+                                    .atZone(ZoneId.of("Europe/Moscow"))
+                                    .toLocalTime()
+                                    .truncatedTo(ChronoUnit.MINUTES)
+                                    .toString()
+                            logger.info("recognized time $localTime")
+                            localTime
+                        } ?: text
+                        gears.sendCard(GearsClient.Card(name = message.from.name!!, time = time))
+                    }
+                    MessageCategories.PLACE -> {
+                        gears.sendCard(GearsClient.Card(name = message.from.name!!, place = meta))
+                    }
+                    MessageCategories.UNKNOWN -> {
+                        unknownTerms[message.from] = text
+                        skype.sendMessage("${message.from.name}, не понял тебя", message.conversation)
+                    }
+                    MessageCategories.CRAP -> {
+                        logger.info("skipping crap")
+                    }
                 }
             }
         } catch (e: Exception) {
