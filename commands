@@ -1,0 +1,22 @@
+docker network create gotocanteen 
+
+docker pull u2668/chat-bot:woodpecker
+docker rm -f chatbot
+docker run \
+  --name chatbot \
+  -p 8080:8080 \
+  --net gotocanteen \
+  --detach \
+  u2668/chat-bot:woodpecker
+
+docker rm -f ngrok
+docker run \
+  --name ngrok \
+  --net gotocanteen \
+  --detach \
+  wernight/ngrok \
+  ngrok http \
+  -authtoken=3rx8CruDuurgPPfCmBz4w_4y17idRpwYodKBmQJ5JkC \
+  -subdomain=gotocanteenbot \
+  -log stdout \
+  chatbot:8080
