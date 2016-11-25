@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # build app
-./mvnw package
+./mvnw clean package
 
 # build image
 docker build -t u2668/chat-bot .
