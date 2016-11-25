@@ -1,4 +1,4 @@
 #!/bin/sh
-deployAddress="138.68.71.0"
+deployAddress="46.101.187.150"
 
 cat ./commands | ssh root@${deployAddress}
